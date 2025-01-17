@@ -249,6 +249,7 @@ async function run() {
         res.status(500).send(err);
       }
     });
+    console.log(user);
 
     // save a plant data in db
     app.post("/plants", verifyToken, verifySeller, async (req, res) => {
