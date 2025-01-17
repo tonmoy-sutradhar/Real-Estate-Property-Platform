@@ -495,7 +495,7 @@ async function run() {
             {
               $lookup: {
                 // go to a different collection and look for data
-                from: "plants", // collection name
+                from: "property", // collection name
                 localField: "propertyId", // local data that you want to match
                 foreignField: "_id", // foreign field name of that same data
                 as: "plants", // return the data as plants array (array naming)
@@ -505,7 +505,7 @@ async function run() {
             {
               $addFields: {
                 // add these fields in order object
-                name: "$plants.name",
+                title: "$plants.title",
               },
             },
             {
