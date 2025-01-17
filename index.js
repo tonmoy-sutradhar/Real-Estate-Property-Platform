@@ -249,7 +249,6 @@ async function run() {
         res.status(500).send(err);
       }
     });
-    console.log(user);
 
     // save a plant data in db
     app.post("/plants", verifyToken, verifySeller, async (req, res) => {
@@ -394,12 +393,37 @@ async function run() {
     // Get all orders for a specific customer
     app.get("/customer-orders/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
+      const query = { "customer.email": email };
+      // const result = await ordersCollection.find(query).toArray();
+      // my----###
+      // const result = await ordersCollection
+      //   .aggregate([
+      //     {
+      //       $match: query,
+      //     },
+      //     {
+      //       $addFields: {
+      //         propertyId: { $toObjectId: "$propertyId" },
+      //       },
+      //     },
+      //     {
+      //       $lookup: {
+      //         from: "property",
+      //         localField: "propertyId",
+      //         foreignField: "_id",
+      //         as: "property",
+      //       },
+      //     },
+      //   ])
+      //   .toArray();
+      // res.send(result);
+      // My---********
 
       try {
         const result = await ordersCollection
           .aggregate([
             {
-              $match: { "customer?.email": email }, // Match specific customer's data by email
+              $match: { "customer.email": email }, // Match specific customer's data by email
             },
             {
               $addFields: {
@@ -408,25 +432,25 @@ async function run() {
             },
             {
               $lookup: {
-                from: "plants", // Collection name
+                from: "property", // Collection name
                 localField: "propertyId", // Local field
                 foreignField: "_id", // Foreign field in plants collection
-                as: "plantData", // Data will be returned as an array
+                as: "propertyData", // Data will be returned as an array
               },
             },
             {
-              $unwind: "$plantData", // Convert array to object
+              $unwind: "$propertyData", // Convert array to object
             },
             {
               $addFields: {
-                title: "$plantData.title", // Add name field from plantData
-                image: "$plantData.image", // Add image field from plantData
-                location: "$plantData.location", // Add category field from plantData
+                title: "$propertyData.title", // Add name field from plantData
+                image: "$propertyData.image", // Add image field from plantData
+                location: "$propertyData.location", // Add category field from plantData
               },
             },
             {
               $project: {
-                plantData: 0, // Exclude plantData from final result
+                propertyData: 0, // Exclude plantData from final result
               },
             },
           ])
