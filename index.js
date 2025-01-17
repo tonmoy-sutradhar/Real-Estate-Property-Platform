@@ -117,10 +117,10 @@ async function run() {
       const email = req.user?.email;
       const query = { email };
       const result = await usersCollection.findOne(query);
-      if (!result || result?.role !== "seller")
+      if (!result || result?.role !== "agent")
         return res
           .status(403)
-          .send({ message: "Forbidden Access! Seller Only Actions!" });
+          .send({ message: "Forbidden Access! Agent Only Actions!" });
 
       next();
     };
@@ -141,6 +141,26 @@ async function run() {
         role: "customer",
         timestamp: Date.now(),
       });
+      res.send(result);
+    });
+
+    // manage user status and role
+    app.patch("/users/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      if (!user || user?.status === "Requested")
+        return res
+          .status(400)
+          .send("You have already requested, wait for some time.");
+
+      const updateDoc = {
+        $set: {
+          status: "Requested",
+        },
+      };
+      const result = await usersCollection.updateOne(query, updateDoc);
+      console.log(result);
       res.send(result);
     });
 
@@ -173,7 +193,7 @@ async function run() {
     app.get("/plants/seller", verifyToken, verifySeller, async (req, res) => {
       const email = req.user.email;
       const result = await propertyCollection
-        .find({ "seller.email": email })
+        .find({ "agent.email": email })
         .toArray();
       res.send(result);
     });
@@ -265,7 +285,7 @@ async function run() {
         });
 
         // To Seller
-        sendEmail(orderInfo?.seller, {
+        sendEmail(orderInfo?.agent, {
           subject: "Hurray!, You have an order to process.",
           message: `Get the plants ready for ${orderInfo?.customer?.name}`,
         });
@@ -343,7 +363,7 @@ async function run() {
         const result = await ordersCollection
           .aggregate([
             {
-              $match: { seller: email }, //Match specific customers data only by email
+              $match: { agent: email }, //Match specific customers data only by email
             },
             {
               $addFields: {
