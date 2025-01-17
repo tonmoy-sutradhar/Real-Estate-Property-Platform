@@ -294,64 +294,161 @@ async function run() {
     });
 
     // Manage plant quantity todo-----<<>>>><<>>><<>>><<>><<>><<>><<>><<>>##
+    // app.patch("/plants/quantity/:id", verifyToken, async (req, res) => {
+    //   const id = req.params.id;
+    //   // const { quantityToUpdate, status } = req.body;
+    //   // const filter = { _id: new ObjectId(id) };
+    //   // let updateDoc = {
+    //   //   $inc: { quantity: -quantityToUpdate },
+    //   // };
+    //   // if (status === "increase") {
+    //   //   updateDoc = {
+    //   //     $inc: { quantity: quantityToUpdate },
+    //   //   };
+    //   // }
+    //   const result = await propertyCollection.updateOne(filter, updateDoc);
+    //   res.send(result);
+    // });
+
+    // ****************Help ChatGPT******************************
+    // Endpoint to handle property order processing
     app.patch("/plants/quantity/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
-      const { quantityToUpdate, status } = req.body;
-      const filter = { _id: new ObjectId(id) };
-      let updateDoc = {
-        $inc: { quantity: -quantityToUpdate },
-      };
-      if (status === "increase") {
-        updateDoc = {
-          $inc: { quantity: quantityToUpdate },
+      const { address, customer, propertyId, price, agent, status } = req.body;
+
+      try {
+        // Save the order in the database
+        const order = {
+          customer,
+          propertyId,
+          price,
+          agent,
+          address,
+          status,
+          createdAt: new Date(),
         };
+
+        // Insert the order into the orders collection
+        const orderResult = await ordersCollection.insertOne(order);
+
+        // Check if the order operation was successful
+        if (orderResult.insertedId) {
+          res.status(200).send({
+            message: "Order placed successfully",
+            orderId: orderResult.insertedId,
+          });
+        } else {
+          res.status(400).send({ message: "Failed to place order" });
+        }
+      } catch (error) {
+        console.error("Error processing order:", error);
+        res.status(500).send({ message: "Internal Server Error", error });
       }
-      const result = await propertyCollection.updateOne(filter, updateDoc);
-      res.send(result);
     });
 
     // get all orders for a specific customer
+    // app.get("/customer-orders/:email", verifyToken, async (req, res) => {
+    //   const email = req.params.email;
+    //   const result = await ordersCollection
+    //     .aggregate([
+    //       {
+    //         $match: { "customer.email": email }, //Match specific customers data only by email
+    //       },
+    //       {
+    //         $addFields: {
+    //           propertyId: { $toObjectId: "$propertyId" }, //convert propertyId string field to objectId field
+    //         },
+    //       },
+    //       {
+    //         $lookup: {
+    //           // go to a different collection and look for data
+    //           from: "plants", // collection name
+    //           localField: "propertyId", // local data that you want to match
+    //           foreignField: "_id", // foreign field name of that same data
+    //           as: "plants", // return the data as plants array (array naming)
+    //         },
+    //       },
+    //       { $unwind: "$plants" }, // unwind lookup result, return without array
+    //       {
+    //         $addFields: {
+    //           // add these fields in order object
+    //           name: "$plants.name",
+    //           image: "$plants.image",
+    //           category: "$plants.category",
+    //         },
+    //       },
+    //       {
+    //         // remove plants object property from order object
+    //         $project: {
+    //           plants: 0,
+    //         },
+    //       },
+    //     ])
+    //     .toArray();
+
+    //   res.send(result);
+    // });
+
+    // Help chatGPT
+    // Get all orders for a specific customer
     app.get("/customer-orders/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
-      const result = await ordersCollection
-        .aggregate([
-          {
-            $match: { "customer.email": email }, //Match specific customers data only by email
-          },
-          {
-            $addFields: {
-              propertyId: { $toObjectId: "$propertyId" }, //convert propertyId string field to objectId field
-            },
-          },
-          {
-            $lookup: {
-              // go to a different collection and look for data
-              from: "plants", // collection name
-              localField: "propertyId", // local data that you want to match
-              foreignField: "_id", // foreign field name of that same data
-              as: "plants", // return the data as plants array (array naming)
-            },
-          },
-          { $unwind: "$plants" }, // unwind lookup result, return without array
-          {
-            $addFields: {
-              // add these fields in order object
-              name: "$plants.name",
-              image: "$plants.image",
-              category: "$plants.category",
-            },
-          },
-          {
-            // remove plants object property from order object
-            $project: {
-              plants: 0,
-            },
-          },
-        ])
-        .toArray();
 
-      res.send(result);
+      try {
+        const result = await ordersCollection
+          .aggregate([
+            {
+              $match: { "customer?.email": email }, // Match specific customer's data by email
+            },
+            {
+              $addFields: {
+                propertyId: { $toObjectId: "$propertyId" }, // Convert propertyId to ObjectId
+              },
+            },
+            {
+              $lookup: {
+                from: "plants", // Collection name
+                localField: "propertyId", // Local field
+                foreignField: "_id", // Foreign field in plants collection
+                as: "plantData", // Data will be returned as an array
+              },
+            },
+            {
+              $unwind: "$plantData", // Convert array to object
+            },
+            {
+              $addFields: {
+                title: "$plantData.title", // Add name field from plantData
+                image: "$plantData.image", // Add image field from plantData
+                location: "$plantData.location", // Add category field from plantData
+              },
+            },
+            {
+              $project: {
+                plantData: 0, // Exclude plantData from final result
+              },
+            },
+          ])
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error("Error fetching customer orders:", error);
+        res.status(500).send({ message: "Failed to fetch orders", error });
+      }
     });
+
+    // get user data which is order######################
+
+    // app.get("/user-orders/:email", async (req, res) => {
+    //   const email = req.params.email;
+    //   if (!email) {
+    //     return res.status(400).send({ error: "Email is required" });
+    //   }
+    //   const query = { email };
+    //   const result = await ordersCollection.find(query).toArray();
+    //   res.send(result);
+    // });
 
     // get all orders for a specific seller
     app.get(
