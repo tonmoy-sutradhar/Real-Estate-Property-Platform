@@ -198,6 +198,12 @@ async function run() {
       res.send(result);
     });
 
+    // get all property from all user
+    app.get("/all-property", async (req, res) => {
+      const result = await propertyCollection.find().toArray();
+      res.send(result);
+    });
+
     // delete a plant from db by seller
     app.delete("/plants/:id", verifyToken, verifySeller, async (req, res) => {
       const id = req.params.id;
@@ -346,78 +352,11 @@ async function run() {
       }
     });
 
-    // get all orders for a specific customer
-    // app.get("/customer-orders/:email", verifyToken, async (req, res) => {
-    //   const email = req.params.email;
-    //   const result = await ordersCollection
-    //     .aggregate([
-    //       {
-    //         $match: { "customer.email": email }, //Match specific customers data only by email
-    //       },
-    //       {
-    //         $addFields: {
-    //           propertyId: { $toObjectId: "$propertyId" }, //convert propertyId string field to objectId field
-    //         },
-    //       },
-    //       {
-    //         $lookup: {
-    //           // go to a different collection and look for data
-    //           from: "plants", // collection name
-    //           localField: "propertyId", // local data that you want to match
-    //           foreignField: "_id", // foreign field name of that same data
-    //           as: "plants", // return the data as plants array (array naming)
-    //         },
-    //       },
-    //       { $unwind: "$plants" }, // unwind lookup result, return without array
-    //       {
-    //         $addFields: {
-    //           // add these fields in order object
-    //           name: "$plants.name",
-    //           image: "$plants.image",
-    //           category: "$plants.category",
-    //         },
-    //       },
-    //       {
-    //         // remove plants object property from order object
-    //         $project: {
-    //           plants: 0,
-    //         },
-    //       },
-    //     ])
-    //     .toArray();
-
-    //   res.send(result);
-    // });
-
     // Help chatGPT
     // Get all orders for a specific customer
     app.get("/customer-orders/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { "customer.email": email };
-      // const result = await ordersCollection.find(query).toArray();
-      // my----###
-      // const result = await ordersCollection
-      //   .aggregate([
-      //     {
-      //       $match: query,
-      //     },
-      //     {
-      //       $addFields: {
-      //         propertyId: { $toObjectId: "$propertyId" },
-      //       },
-      //     },
-      //     {
-      //       $lookup: {
-      //         from: "property",
-      //         localField: "propertyId",
-      //         foreignField: "_id",
-      //         as: "property",
-      //       },
-      //     },
-      //   ])
-      //   .toArray();
-      // res.send(result);
-      // My---********
 
       try {
         const result = await ordersCollection
@@ -462,18 +401,6 @@ async function run() {
         res.status(500).send({ message: "Failed to fetch orders", error });
       }
     });
-
-    // get user data which is order######################
-
-    // app.get("/user-orders/:email", async (req, res) => {
-    //   const email = req.params.email;
-    //   if (!email) {
-    //     return res.status(400).send({ error: "Email is required" });
-    //   }
-    //   const query = { email };
-    //   const result = await ordersCollection.find(query).toArray();
-    //   res.send(result);
-    // });
 
     // get all orders for a specific seller
     app.get(
