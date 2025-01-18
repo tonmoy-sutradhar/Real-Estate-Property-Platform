@@ -11,7 +11,11 @@ const port = process.env.PORT || 7000;
 
 // ---------------------------------------Middleware-----------------------------------------
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5174"],
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://real-estate-property-platform.web.app",
+  ],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -89,7 +93,7 @@ const client = new MongoClient(uri, {
 // My MongoDB
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
     const db = client.db("Real-estate-property-platform");
     const usersCollection = db.collection("users");
@@ -190,11 +194,19 @@ async function run() {
     );
 
     // get inventory data for seller
+    // verifySeller,
     app.get("/plants/seller", verifyToken, verifySeller, async (req, res) => {
       const email = req.user.email;
       const result = await propertyCollection
         .find({ "agent.email": email })
         .toArray();
+      res.send(result);
+    });
+
+    // get inventory data for seller
+    // verifySeller,
+    app.get("/plants/admin", verifyToken, verifyAdmin, async (req, res) => {
+      const result = await propertyCollection.find().toArray();
       res.send(result);
     });
 
@@ -473,7 +485,7 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
