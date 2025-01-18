@@ -99,6 +99,8 @@ async function run() {
     const usersCollection = db.collection("users");
     const propertyCollection = db.collection("property");
     const ordersCollection = db.collection("orders");
+    const reviewCollection = db.collection("review");
+
     // const propertyCollection = db.collection("plants");
     // const ordersCollection = db.collection("orders");
 
@@ -486,13 +488,38 @@ async function run() {
     });
 
     // --------------------------Review section ------------------
-    // Get review by id
+    // Get property by id
     app.get("/all-quires/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await propertyCollection.findOne(query);
       res.send(result);
     });
+
+    // --------------------------------------------Add review by User/customer -----------------------------------------
+    app.post("/add-recommended", async (req, res) => {
+      const data = req.body;
+
+      const result = await reviewCollection.insertOne(data);
+      res.send(result);
+    });
+
+    // if a user already recommend in this Query ----->>
+    // const query = { email: data.email, propertyId: data.propertyId };
+    // const alreadyExist = await reviewCollection.findOne(query);
+    // if (alreadyExist) {
+    //   return res.status(400).send("You have already recommend on this query");
+    // er por result er line
+    // }
+    // Increase recommend count in  RecommendCollection
+    // const filter = { _id: new ObjectId(data.queryId) };
+    // const update = {
+    //   $inc: { recommendationCount: 1 },
+    // };
+    // const updateRecommendCount = await quiresCollection.updateOne(
+    //   filter,
+    //   update
+    // );
 
     // await client.db("admin").command({ ping: 1 });
     console.log(
