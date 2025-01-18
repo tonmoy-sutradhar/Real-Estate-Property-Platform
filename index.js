@@ -521,6 +521,23 @@ async function run() {
     //   update
     // );
 
+    // --------------------------------------------GET Specific Recommended by Email-----------------------------------------------------
+    app.get("/all-recommended/:email", async (req, res) => {
+      const email = req.params.email;
+      if (!email) {
+        return res.status(400).send({ error: "Email is required" });
+      }
+      const query = { email };
+      const result = await reviewCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // --------------------------------------------GET All Recommended-----------------------------------------------------
+    app.get("/all-review", async (req, res) => {
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
+    });
+
     // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
