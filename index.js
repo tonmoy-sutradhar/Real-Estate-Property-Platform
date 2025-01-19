@@ -9,7 +9,7 @@ const morgan = require("morgan");
 const nodemailer = require("nodemailer");
 const port = process.env.PORT || 7000;
 
-// --------------------------------------------------------Middleware--------------------------------------------------
+// ----------------------------------------------Middleware-----------------------------------------------
 const corsOptions = {
   origin: [
     "http://localhost:5173",
@@ -25,7 +25,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-// --------------------------------------------------------VerifyToken--------------------------------------------------
+// -------------------------------------------VerifyToken-------------------------------------------------
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token;
 
@@ -42,7 +42,7 @@ const verifyToken = async (req, res, next) => {
   });
 };
 
-// --------------------------------------------------------Email Send(NodeMailer)--------------------------------------------------
+// ------------------------------------------Email Send(NodeMailer)---------------------------------------
 // send email using nodemailer
 const sendEmail = (emailAddress, emailData) => {
   // create transporter
@@ -71,7 +71,7 @@ const sendEmail = (emailAddress, emailData) => {
     html: `<p>${emailData?.message}</p>`,
   };
 
-  // ---------------------------------------------------send email-----------------------------------------------------
+  // ----------------------------------------send email----------------------------------------------------
   transporter.sendMail(mailBody, (error, info) => {
     if (error) {
       console.log(error);
@@ -81,7 +81,7 @@ const sendEmail = (emailAddress, emailData) => {
   });
 };
 
-// ----------------------------------------MongoDB Connection -----------------------------------------------------
+// --------------------------------------MongoDB Connection -----------------------------------------------
 
 const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.cjt8m.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -102,7 +102,7 @@ async function run() {
     const ordersCollection = db.collection("orders");
     const reviewCollection = db.collection("review");
 
-    // ----------------------------------------------Generate jwt token-----------------------------------------------------
+    // ----------------------------------------Generate jwt token-----------------------------------------
     app.post("/jwt", async (req, res) => {
       const email = req.body;
       const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
@@ -117,7 +117,7 @@ async function run() {
         .send({ success: true });
     });
 
-    // -------------------------------------------------------Logout(Check JWT)---------------------------------------------------------
+    // -----------------------------------------Logout(Check JWT)-----------------------------------------
     app.get("/logout", async (req, res) => {
       try {
         res
@@ -132,7 +132,7 @@ async function run() {
       }
     });
 
-    // --------------------------------------------------------VerifyAdmin--------------------------------------------------
+    // --------------------------------------------VerifyAdmin---------------------------------------------
     const verifyAdmin = async (req, res, next) => {
       // console.log('data from verifyToken middleware--->', req.user?.email)
       const email = req.user?.email;
@@ -146,7 +146,7 @@ async function run() {
       next();
     };
 
-    // --------------------------------------------------------VerifySeller--------------------------------------------------
+    // --------------------------------------------VerifySeller---------------------------------------------
     const verifySeller = async (req, res, next) => {
       // console.log('data from verifyToken middleware--->', req.user?.email)
       const email = req.user?.email;
@@ -160,7 +160,7 @@ async function run() {
       next();
     };
 
-    // -------------------------------------------------save user in database-----------------------------------------------
+    // -----------------------------------------save user in database---------------------------------------
     app.post("/users/:email", async (req, res) => {
       sendEmail();
       const email = req.params.email;
@@ -179,7 +179,7 @@ async function run() {
       res.send(result);
     });
 
-    // ---------------------------------------------Manage user status and Role---------------------------------------------
+    // ---------------------------------------Manage user status and Role-------------------------------------
     app.patch("/users/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { email };
@@ -199,7 +199,7 @@ async function run() {
       res.send(result);
     });
 
-    // ---------------------------------------------Get all User data--------------------------------------------------------
+    // -----------------------------------------Get all User data----------------------------------------------
     app.get("/all-users/:email", verifyToken, verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const query = { email: { $ne: email } };
@@ -207,7 +207,7 @@ async function run() {
       res.send(result);
     });
 
-    // --------------------------------------------update a user role & status-------------------------------------------------
+    // --------------------------------------update a user role & status---------------------------------------
     app.patch(
       "/user/role/:email",
       verifyToken,
@@ -224,7 +224,7 @@ async function run() {
       }
     );
 
-    // ---------------------------------------------get inventory data for agent-----------------------------------------------
+    // -------------------------------------get inventory data for agent--------------------------------------
     app.get("/plants/seller", verifyToken, verifySeller, async (req, res) => {
       const email = req.user.email;
       const result = await propertyCollection
@@ -233,19 +233,19 @@ async function run() {
       res.send(result);
     });
 
-    // ---------------------------------------get all property data from DB----------------------------------------------------
+    // -----------------------------------get all property data from DB----------------------------------------
     app.get("/plants/admin", verifyToken, verifyAdmin, async (req, res) => {
       const result = await propertyCollection.find().toArray();
       res.send(result);
     });
 
-    // -----------------------------------------get all property from all user(Home)------------------------------------------------
+    // -----------------------------------get all property from all user(Home)----------------------------------
     app.get("/all-property", async (req, res) => {
       const result = await propertyCollection.find().toArray();
       res.send(result);
     });
 
-    // --------------------------------------------delete a property from db by seller----------------------------------------------
+    // ----------------------------------delete a property from db by seller------------------------------------
     app.delete("/plants/:id", verifyToken, verifySeller, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -253,14 +253,14 @@ async function run() {
       res.send(result);
     });
 
-    // -----------------------------------------------get user role-----------------------------------------------------------
+    // ---------------------------------------get user role-----------------------------------------------------
     app.get("/users/role/:email", async (req, res) => {
       const email = req.params.email;
       const result = await usersCollection.findOne({ email });
       res.send({ role: result?.role });
     });
 
-    // ----------------------------------------------get all user data----------------------------------------------------------
+    // -------------------------------------get all user data--------------------------------------------------
     app.get("/all-users/:email", verifyToken, verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const query = { email: { $ne: email } };
@@ -268,20 +268,20 @@ async function run() {
       res.send(result);
     });
 
-    // ---------------------------------------------------save a plant data in db---------------------------------------------
+    // -----------------------------------save a plant data in db-------------------------------------------
     app.post("/plants", verifyToken, verifySeller, async (req, res) => {
       const plant = req.body;
       const result = await propertyCollection.insertOne(plant);
       res.send(result);
     });
 
-    // ----------------------------------------------get all property from db-------------------------------------------
+    // -------------------------------------get all property from db----------------------------------------
     app.get("/plants", async (req, res) => {
       const result = await propertyCollection.find().limit(20).toArray();
       res.send(result);
     });
 
-    // ----------------------------------------------get a property by id------------------------------------------------
+    // ----------------------------------------get a property by id------------------------------------------
     app.get("/plants/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -289,7 +289,7 @@ async function run() {
       res.send(result);
     });
 
-    // ----------------------------------------------Save order data in db--------------------------------------------------
+    // ------------------------------------==----Save order data in db---------------------------------------
     app.post("/order", verifyToken, async (req, res) => {
       const orderInfo = req.body;
       console.log(orderInfo);
@@ -365,7 +365,7 @@ async function run() {
     });
 
     // Help chatGPT
-    // ---------------------------------------------Get all orders for a specific customer---------------------------------------
+    // --------------------------------Get all orders for a specific customer--------------------------------
     app.get("/customer-orders/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { "customer.email": email };
@@ -414,7 +414,7 @@ async function run() {
       }
     });
 
-    // --------------------------------------------get all orders for a specific agent(Aggregate)------------------------------------
+    // ----------------------------get all orders for a specific agent(Aggregate)----------------------------
     app.get(
       "/seller-orders/:email",
       verifyToken,
@@ -460,7 +460,7 @@ async function run() {
       }
     );
 
-    // ---------------------------------------------update a order status----------------------------------------------
+    // -----------------------------------update a order status----------------------------------------------
     app.patch("/orders/:id", verifyToken, verifySeller, async (req, res) => {
       const id = req.params.id;
       const { status } = req.body;
@@ -472,7 +472,7 @@ async function run() {
       res.send(result);
     });
 
-    // ----------------------------------------------Cancel/delete an order----------------------------------------------
+    // ------------------------------------------Cancel/delete an order--------------------------------------
     app.delete("/orders/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -485,40 +485,29 @@ async function run() {
       res.send(result);
     });
 
-    // --------------------------------------------------------Review section ---------------------------------------
+    // ------------------------------------------------Review section ---------------------------------------
 
-    // ----------------------------------------------Get property by id----------------------------------------------
-    app.get("/all-quires/:id", async (req, res) => {
+    // -----------------------------------------Get property by id------------------------------------------
+    app.get("/all-property/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await propertyCollection.findOne(query);
       res.send(result);
     });
 
-    // --------------------------------------------Add review by User/customer -----------------------------------------
+    // ---------------------------------------Add review by User/customer -----------------------------------
     app.post("/add-review", async (req, res) => {
       const data = req.body;
+      // if a user already review in this property ----->>
+      const query = { email: data.email, propertyId: data.propertyId };
+      const alreadyExist = await reviewCollection.findOne(query);
+      if (alreadyExist) {
+        return res.status(400).send("You have already review on this Property");
+      }
 
       const result = await reviewCollection.insertOne(data);
       res.send(result);
     });
-
-    // if a user already recommend in this Query ----->>
-    // const query = { email: data.email, propertyId: data.propertyId };
-    // const alreadyExist = await reviewCollection.findOne(query);
-    // if (alreadyExist) {
-    //   return res.status(400).send("You have already recommend on this query");
-    // er por result er line
-    // }
-    // Increase recommend count in  RecommendCollection
-    // const filter = { _id: new ObjectId(data.queryId) };
-    // const update = {
-    //   $inc: { recommendationCount: 1 },
-    // };
-    // const updateRecommendCount = await quiresCollection.updateOne(
-    //   filter,
-    //   update
-    // );
 
     // --------------------------------------------GET Specific Review by Email-----------------------------------------------------
     app.get("/all-review/:email", async (req, res) => {
@@ -531,15 +520,13 @@ async function run() {
       res.send(result);
     });
 
-    // --------------------------------------------GET All Review-----------------------------------------------------
-    // TODO
-    // app.get("/all-review", async (req, res) => {
-    //   const result = await reviewCollection.find().toArray();
-    //   res.send(result);
-    // });
+    // -------------------------------------GET All Review--------------------------------------------------
+    app.get("/all-review", async (req, res) => {
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
+    });
 
-    // ------------------------------------------Delete Recommend by id---------------------------------------------------
-    //  TODO
+    // --------------------------------------Delete Review by id--------------------------------------------
     app.delete("/review-delete/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
@@ -548,11 +535,10 @@ async function run() {
     });
 
     // await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
-    // Ensures that the client will close when you finish/error
   }
 }
 run().catch(console.dir);
