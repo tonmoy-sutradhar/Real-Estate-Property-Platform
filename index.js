@@ -102,6 +102,36 @@ async function run() {
     const ordersCollection = db.collection("orders");
     const reviewCollection = db.collection("review");
 
+    // ----------------------------------------------Generate jwt token-----------------------------------------------------
+    app.post("/jwt", async (req, res) => {
+      const email = req.body;
+      const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "365d",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
+    // -------------------------------------------------------Logout(Check JWT)---------------------------------------------------------
+    app.get("/logout", async (req, res) => {
+      try {
+        res
+          .clearCookie("token", {
+            maxAge: 0,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+          })
+          .send({ success: true });
+      } catch (err) {
+        res.status(500).send(err);
+      }
+    });
+
     // --------------------------------------------------------VerifyAdmin--------------------------------------------------
     const verifyAdmin = async (req, res, next) => {
       // console.log('data from verifyToken middleware--->', req.user?.email)
@@ -236,35 +266,6 @@ async function run() {
       const query = { email: { $ne: email } };
       const result = await usersCollection.find(query).toArray();
       res.send(result);
-    });
-
-    // ----------------------------------------------Generate jwt token-----------------------------------------------------
-    app.post("/jwt", async (req, res) => {
-      const email = req.body;
-      const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "365d",
-      });
-      res
-        .cookie("token", token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-        })
-        .send({ success: true });
-    });
-    // -------------------------------------------------------Logout(Check JWT)---------------------------------------------------------
-    app.get("/logout", async (req, res) => {
-      try {
-        res
-          .clearCookie("token", {
-            maxAge: 0,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-          })
-          .send({ success: true });
-      } catch (err) {
-        res.status(500).send(err);
-      }
     });
 
     // ---------------------------------------------------save a plant data in db---------------------------------------------
@@ -495,7 +496,7 @@ async function run() {
     });
 
     // --------------------------------------------Add review by User/customer -----------------------------------------
-    app.post("/add-recommended", async (req, res) => {
+    app.post("/add-review", async (req, res) => {
       const data = req.body;
 
       const result = await reviewCollection.insertOne(data);
@@ -520,7 +521,7 @@ async function run() {
     // );
 
     // --------------------------------------------GET Specific Review by Email-----------------------------------------------------
-    app.get("/all-recommended/:email", async (req, res) => {
+    app.get("/all-review/:email", async (req, res) => {
       const email = req.params.email;
       if (!email) {
         return res.status(400).send({ error: "Email is required" });
@@ -530,7 +531,7 @@ async function run() {
       res.send(result);
     });
 
-    // --------------------------------------------GET All Recommended-----------------------------------------------------
+    // --------------------------------------------GET All Review-----------------------------------------------------
     // TODO
     // app.get("/all-review", async (req, res) => {
     //   const result = await reviewCollection.find().toArray();
@@ -539,12 +540,12 @@ async function run() {
 
     // ------------------------------------------Delete Recommend by id---------------------------------------------------
     //  TODO
-    //  app.delete("/recommend-delete/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const query = { _id: new ObjectId(id) };
-    //   const result = await recommendedCollection.deleteOne(query);
-    //   res.send(result);
-    // });
+    app.delete("/review-delete/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await reviewCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // await client.db("admin").command({ ping: 1 });
     console.log(
